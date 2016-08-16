@@ -10,6 +10,7 @@
 # Based on a template by BASH3 Boilerplate v2.0.0
 # Copyright (c) 2013 Kevin van Zonneveld and contributors
 # http://bash3boilerplate.sh/#authors
+# https://github.com/WarpEngineer/bash3boilerplate
 
 # Exit on error. Append || true if you expect an error.
 set -o errexit
