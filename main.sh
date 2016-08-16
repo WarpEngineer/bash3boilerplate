@@ -36,6 +36,7 @@ NO_COLOR="${NO_COLOR:-}"    # true = disable color. otherwise autodetected
 ##############################################################################
 
 function _fmt ()      {
+  local color_output="\x1b[36m"
   local color_debug="\x1b[35m"
   local color_info="\x1b[32m"
   local color_notice="\x1b[34m"
@@ -62,6 +63,7 @@ function warning ()   { [ "${LOG_LEVEL}" -ge 4 ] && echo "$(_fmt warning) ${@}" 
 function notice ()    { [ "${LOG_LEVEL}" -ge 5 ] && echo "$(_fmt notice) ${@}" 1>&2 || true; }
 function info ()      { [ "${LOG_LEVEL}" -ge 6 ] && echo "$(_fmt info) ${@}" 1>&2 || true; }
 function debug ()     { [ "${LOG_LEVEL}" -ge 7 ] && echo "$(_fmt debug) ${@}" 1>&2 || true; }
+function output ()    {                             echo "$(_fmt output) ${@}" || true; }
 
 function help () {
   echo "" 1>&2
@@ -236,6 +238,9 @@ info "arg_f: ${arg_f}"
 info "arg_d: ${arg_d}"
 info "arg_v: ${arg_v}"
 info "arg_h: ${arg_h}"
+
+# This goes to STDOUT
+output "General output that goes to stdout"
 
 # All of these go to STDERR, so you can use STDOUT for piping machine readable information to other software
 debug "Info useful to developers for debugging the application, not useful during operations."
