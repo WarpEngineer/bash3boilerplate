@@ -221,7 +221,7 @@ fi
 ##############################################################################
 
 [ -z "${arg_f:-}" ]     && help      "Setting a filename with -f or --file is required"
-[ -z "${LOG_LEVEL:-}" ] && emergency "Cannot continue without LOG_LEVEL. "
+[ -z "${LOG_LEVEL:-}" ] && emergency "Can not continue without LOG_LEVEL. "
 
 
 ### Runtime
