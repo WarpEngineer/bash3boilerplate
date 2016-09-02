@@ -241,7 +241,7 @@ info "arg_v: ${arg_v}"
 info "arg_h: ${arg_h}"
 
 # This goes to STDOUT
-output "General output that goes to stdout"
+output "General output that goes to stdout regardless of log level"
 
 # All of these go to STDERR, so you can use STDOUT for piping machine readable information to other software
 debug "Info useful to developers for debugging the application, not useful during operations."
