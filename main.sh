@@ -23,6 +23,9 @@ set -o pipefail
 # Turn on traces, useful while debugging but commented out by default
 # set -o xtrace
 
+# Set version 
+__version="2016.10"
+
 # Set magic variables for current file, directory, os, etc.
 __dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 __file="${__dir}/$(basename "${BASH_SOURCE[0]}")"
@@ -101,6 +104,7 @@ read -r -d '' __usage <<-'EOF' || true # exits non-zero when EOF encountered
   -h --help        This page
   -n --no-color    Disable color output
   -1 --one         Do just one thing
+  -z --version     Show version and exit
 EOF
 read -r -d '' __helptext <<-'EOF' || true # exits non-zero when EOF encountered
  This is Bash3 Boilerplate's help text. Feel free to add any description of your
@@ -211,6 +215,13 @@ fi
 # no color mode
 if [ "${arg_n}" = "1" ]; then
   NO_COLOR="true"
+fi
+
+# version mode
+if [ "${arg_z}" = "1" ]; then
+ # Version print exists with code 1
+ echo "Version: ${__version}" 2>&1
+ exit 1
 fi
 
 # help mode
