@@ -23,7 +23,10 @@ set -o pipefail
 # Turn on traces, useful while debugging but commented out by default
 # set -o xtrace
 
-# Set version 
+# Boilerplate version
+__BOILERPLATE_VERSION__="2016.10.6"
+
+# Set script version 
 __version="2016.10"
 
 # Set magic variables for current file, directory, os, etc.
@@ -104,7 +107,7 @@ read -r -d '' __usage <<-'EOF' || true # exits non-zero when EOF encountered
   -h --help        This page
   -n --no-color    Disable color output
   -1 --one         Do just one thing
-  -z --version     Show version and exit
+  -V --version     Show version and exit
 EOF
 read -r -d '' __helptext <<-'EOF' || true # exits non-zero when EOF encountered
  This is Bash3 Boilerplate's help text. Feel free to add any description of your
@@ -218,7 +221,7 @@ if [ "${arg_n}" = "1" ]; then
 fi
 
 # version mode
-if [ "${arg_z}" = "1" ]; then
+if [ "${arg_V}" = "1" ]; then
  # Version print exists with code 1
  echo "Version: ${__version}" 2>&1
  exit 1
