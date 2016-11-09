@@ -7,8 +7,13 @@
 #
 #  LOG_LEVEL=7 ./main.sh -f /tmp/x -d (change this for your script)
 #
-# Based on a template by BASH3 Boilerplate v2.0.0
+# Based on a template by BASH3 Boilerplate v2.1.0
+# http://bash3boilerplate.sh/#authors
+#
+# The MIT License (MIT)
 # Copyright (c) 2013 Kevin van Zonneveld and contributors
+# You are not obligated to bundle the LICENSE file with your b3bp projects as long
+# as you leave these references intact in the header comments of your source files.
 # http://bash3boilerplate.sh/#authors
 # https://github.com/WarpEngineer/bash3boilerplate
 
@@ -41,8 +46,10 @@ NO_COLOR="${NO_COLOR:-}"    # true = disable color. otherwise autodetected
 
 ### Functions
 ##############################################################################
+function __b3bp_log () {
+  local log_level="${1}"
+  shift
 
-function _fmt ()      {
   local color_output="\x1b[36m"
   local color_debug="\x1b[35m"
   local color_info="\x1b[32m"
@@ -52,25 +59,33 @@ function _fmt ()      {
   local color_critical="\x1b[1;31m"
   local color_alert="\x1b[1;33;41m"
   local color_emergency="\x1b[1;4;5;33;41m"
-  local colorvar=color_$1
+  local colorvar="color_${log_level}"
 
   local color="${!colorvar:-$color_error}"
   local color_reset="\x1b[0m"
+
   if [ "${NO_COLOR}" = "true" ] || [[ "${TERM:-}" != "xterm"* ]] || [ -t 1 ]; then
     # Don't use colors on pipes or non-recognized terminals
     color=""; color_reset=""
   fi
-  echo -e "$(date -u +"%Y-%m-%d %H:%M:%S UTC") ${color}$(printf "[%9s]" ${1})${color_reset}";
+
+  # all remaining arguments are to be printed
+  local log_line=""
+
+  while IFS=$'\n' read -r log_line; do
+    echo -e "$(date -u +"%Y-%m-%d %H:%M:%S UTC") ${color}$(printf "[%9s]" ${log_level})${color_reset} $log_line" 1>&2
+  done <<< "${@:-}"
 }
-function emergency () {                             echo "$(_fmt emergency) ${@}" 1>&2 || true; exit 1; }
-function alert ()     { [ "${LOG_LEVEL}" -ge 1 ] && echo "$(_fmt alert) ${@}" 1>&2 || true; }
-function critical ()  { [ "${LOG_LEVEL}" -ge 2 ] && echo "$(_fmt critical) ${@}" 1>&2 || true; }
-function error ()     { [ "${LOG_LEVEL}" -ge 3 ] && echo "$(_fmt error) ${@}" 1>&2 || true; }
-function warning ()   { [ "${LOG_LEVEL}" -ge 4 ] && echo "$(_fmt warning) ${@}" 1>&2 || true; }
-function notice ()    { [ "${LOG_LEVEL}" -ge 5 ] && echo "$(_fmt notice) ${@}" 1>&2 || true; }
-function info ()      { [ "${LOG_LEVEL}" -ge 6 ] && echo "$(_fmt info) ${@}" 1>&2 || true; }
-function debug ()     { [ "${LOG_LEVEL}" -ge 7 ] && echo "$(_fmt debug) ${@}" 1>&2 || true; }
-function output ()    {                             echo "$(_fmt output) ${@}" || true; }
+
+function emergency () {                                $(__b3bp_log emergency "${@}") || true; exit 1; }
+function alert ()     { [ "${LOG_LEVEL:-0}" -ge 1 ] && $(__b3bp_log alert "${@}") || true; }
+function critical ()  { [ "${LOG_LEVEL:-0}" -ge 2 ] && $(__b3bp_log critical "${@}") || true; }
+function error ()     { [ "${LOG_LEVEL:-0}" -ge 3 ] && $(__b3bp_log error "${@}") || true; }
+function warning ()   { [ "${LOG_LEVEL:-0}" -ge 4 ] && $(__b3bp_log warning "${@}") || true; }
+function notice ()    { [ "${LOG_LEVEL:-0}" -ge 5 ] && $(__b3bp_log notice "${@}") || true; }
+function info ()      { [ "${LOG_LEVEL:-0}" -ge 6 ] && $(__b3bp_log info "${@}") || true; }
+function debug ()     { [ "${LOG_LEVEL:-0}" -ge 7 ] && $(__b3bp_log debug "${@}") || true; }
+function output ()    {                           echo $(__b3bp_log output "${@}") || true; }
 
 function help () {
   echo "" 1>&2
@@ -78,8 +93,12 @@ function help () {
   echo "" 1>&2
   echo "  ${__usage:-No usage available}" 1>&2
   echo "" 1>&2
-  echo " ${__helptext:-}" 1>&2
-  echo "" 1>&2
+
+  if [ -n "${__helptext:-}" ]; then
+    echo " ${__helptext}" 1>&2
+    echo "" 1>&2
+  fi
+
   exit 1
 }
 
@@ -116,89 +135,102 @@ read -r -d '' __helptext <<-'EOF' || true # exits non-zero when EOF encountered
 EOF
 
 # Translate usage string -> getopts arguments, and set $arg_<flag> defaults
-while read line; do
+while read __b3bp_tmp_line; do
   # fetch single character version of option string
-  opt="$(echo "${line}" |awk '{print $1}' |sed -e 's#^-##')"
+  __b3bp_tmp_opt="$(echo "${__b3bp_tmp_line}" |awk '{print $1}' |sed -e 's#^-##')"
 
   # fetch long version if present
-  long_opt="$(echo "${line}" |awk '/\-\-/ {print $2}' |sed -e 's#^--##')"
-  long_opt_mangled="$(sed 's#-#_#g' <<< $long_opt)"
+  __b3bp_tmp_long_opt="$(echo "${__b3bp_tmp_line}" |awk '/\-\-/ {print $2}' |sed -e 's#^--##')"
+  __b3bp_tmp_long_opt_mangled="$(sed 's#-#_#g' <<< $__b3bp_tmp_long_opt)"
 
   # map long name back to short name
-  varname="short_opt_${long_opt_mangled}"
-  eval "${varname}=\"${opt}\""
+  __b3bp_tmp_varname="__b3bp_tmp_short_opt_${__b3bp_tmp_long_opt_mangled}"
+  eval "${__b3bp_tmp_varname}=\"${__b3bp_tmp_opt}\""
 
   # check if option takes an argument
-  varname="has_arg_${opt}"
-  if ! echo "${line}" |egrep '\[.*\]' >/dev/null 2>&1; then
-    init="0" # it's a flag. init with 0
-    eval "${varname}=0"
+  __b3bp_tmp_varname="__b3bp_tmp_has_arg_${__b3bp_tmp_opt}"
+  if ! echo "${__b3bp_tmp_line}" |egrep '\[.*\]' >/dev/null 2>&1; then
+    __b3bp_tmp_init="0" # it's a flag. init with 0
+    eval "${__b3bp_tmp_varname}=0"
   else
-    opt="${opt}:" # add : if opt has arg
-    init=""  # it has an arg. init with ""
-    eval "${varname}=1"
+    __b3bp_tmp_opt="${__b3bp_tmp_opt}:" # add : if opt has arg
+    __b3bp_tmp_init=""  # it has an arg. init with ""
+    eval "${__b3bp_tmp_varname}=1"
   fi
-  opts="${opts:-}${opt}"
+  __b3bp_tmp_opts="${__b3bp_tmp_opts:-}${__b3bp_tmp_opt}"
 
-  varname="arg_${opt:0:1}"
-  if ! echo "${line}" |egrep '\. Default=' >/dev/null 2>&1; then
-    eval "${varname}=\"${init}\""
+  __b3bp_tmp_varname="arg_${__b3bp_tmp_opt:0:1}"
+  if ! echo "${__b3bp_tmp_line}" |egrep '\. Default=' >/dev/null 2>&1; then
+    eval "${__b3bp_tmp_varname}=\"${__b3bp_tmp_init}\""
   else
-    match="$(echo "${line}" |sed 's#^.*Default=\(\)#\1#g')"
-    eval "${varname}=\"${match}\""
+    __b3bp_tmp_match="$(echo "${__b3bp_tmp_line}" |sed 's#^.*Default=\(\)#\1#g')"
+    eval "${__b3bp_tmp_varname}=\"${__b3bp_tmp_match}\""
   fi
-done <<< "${__usage}"
+done <<< "${__usage:-}"
 
-# Allow long options like --this
-opts="${opts}-:"
+# run getopts only if options were specified in __usage
+if [ -n "${__b3bp_tmp_opts:-}" ]; then
+  # Allow long options like --this
+  __b3bp_tmp_opts="${__b3bp_tmp_opts}-:"
 
-# Reset in case getopts has been used previously in the shell.
-OPTIND=1
+  # Reset in case getopts has been used previously in the shell.
+  OPTIND=1
 
-# start parsing command line
-set +o nounset # unexpected arguments will cause unbound variables
-               # to be dereferenced
-# Overwrite $arg_<flag> defaults with the actual CLI options
-while getopts "${opts}" opt; do
-  [ "${opt}" = "?" ] && help "Invalid use of script: ${@} "
+  # start parsing command line
+  set +o nounset # unexpected arguments will cause unbound variables
+		 # to be dereferenced
+  # Overwrite $arg_<flag> defaults with the actual CLI options
+  while getopts "${__b3bp_tmp_opts}" __b3bp_tmp_opt; do
+    [ "${__b3bp_tmp_opt}" = "?" ] && help "Invalid use of script: ${@} "
 
-  if [ "${opt}" = "-" ]; then
-    # OPTARG is long-option-name or long-option=value
-    if [[ "${OPTARG}" =~ .*=.* ]]; then
-      # --key=value format
-      long=${OPTARG/=*/}
-      long_mangled="$(sed 's#-#_#g' <<< $long)"
-      # Set opt to the short option corresponding to the long option
-      eval "opt=\"\${short_opt_${long_mangled}}\""
-      OPTARG=${OPTARG#*=}
-    else
-      # --key value format
-      # Map long name to short version of option
-      long_mangled="$(sed 's#-#_#g' <<< $OPTARG)"
-      eval "opt=\"\${short_opt_${long_mangled}}\""
-      # Only assign OPTARG if option takes an argument
-      eval "OPTARG=\"\${@:OPTIND:\${has_arg_${opt}}}\""
-      # shift over the argument if argument is expected
-      ((OPTIND+=has_arg_${opt}))
+    if [ "${__b3bp_tmp_opt}" = "-" ]; then
+      # OPTARG is long-option-name or long-option=value
+      if [[ "${OPTARG}" =~ .*=.* ]]; then
+	# --key=value format
+	__b3bp_tmp_long_opt=${OPTARG/=*/}
+	__b3bp_tmp_long_opt_mangled="$(sed 's#-#_#g' <<< $__b3bp_tmp_long_opt)"
+	# Set opt to the short option corresponding to the long option
+	eval "__b3bp_tmp_opt=\"\${__b3bp_tmp_short_opt_${__b3bp_tmp_long_opt_mangled}}\""
+	OPTARG=${OPTARG#*=}
+      else
+	# --key value format
+	# Map long name to short version of option
+	__b3bp_tmp_long_opt_mangled="$(sed 's#-#_#g' <<< $OPTARG)"
+	eval "__b3bp_tmp_opt=\"\${__b3bp_tmp_short_opt_${__b3bp_tmp_long_opt_mangled}}\""
+	# Only assign OPTARG if option takes an argument
+	eval "OPTARG=\"\${@:OPTIND:\${__b3bp_tmp_has_arg_${__b3bp_tmp_opt}}}\""
+	# shift over the argument if argument is expected
+	((OPTIND+=__b3bp_tmp_has_arg_${__b3bp_tmp_opt}))
+      fi
+      # we have set opt/OPTARG to the short value and the argument as OPTARG if it exists
     fi
-    # we have set opt/OPTARG to the short value and the argument as OPTARG if it exists
-  fi
-  varname="arg_${opt:0:1}"
-  default="${!varname}"
+    __b3bp_tmp_varname="arg_${__b3bp_tmp_opt:0:1}"
+    __b3bp_tmp_default="${!__b3bp_tmp_varname}"
 
-  value="${OPTARG}"
-  if [ -z "${OPTARG}" ] && [ "${default}" = "0" ]; then
-    value="1"
-  fi
+    __b3bp_tmp_value="${OPTARG}"
+    if [ -z "${OPTARG}" ] && [ "${__b3bp_tmp_default}" = "0" ]; then
+      __b3bp_tmp_value="1"
+    fi
 
-  eval "${varname}=\"${value}\""
-  debug "cli arg ${varname} = ($default) -> ${!varname}"
+    eval "${__b3bp_tmp_varname}=\"${__b3bp_tmp_value}\""
+    debug "cli arg ${__b3bp_tmp_varname} = ($__b3bp_tmp_default) -> ${!__b3bp_tmp_varname}"
+  done
+  set -o nounset # no more unbound variable references expected
+
+  shift $((OPTIND-1))
+
+  [ "${1:-}" = "--" ] && shift
+fi
+
+
+### Cleanup Environment variables
+##############################################################################
+
+for __tmp_varname in ${!__b3bp_tmp_*}; do
+  eval "unset ${__tmp_varname}"
 done
-set -o nounset # no more unbound variable references expected
 
-shift $((OPTIND-1))
-
-[ "${1:-}" = "--" ] && shift
+unset __tmp_varname
 
 
 ### Command-line argument switches (like -d for debugmode, -h for showing helppage)
@@ -256,6 +288,7 @@ info "arg_h: ${arg_h}"
 
 # This goes to STDOUT
 output "General output that goes to stdout regardless of log level"
+info "$(echo -e "multiple lines example - line #1\nmultiple lines example - line #2\nimagine logging the output of 'ls -al /path/'")"
 
 # All of these go to STDERR, so you can use STDOUT for piping machine readable information to other software
 debug "Info useful to developers for debugging the application, not useful during operations."
