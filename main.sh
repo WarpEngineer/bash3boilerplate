@@ -83,7 +83,11 @@ function __b3bp_log () {
   local log_line=""
 
   while IFS=$'\n' read -r log_line; do
-    echo -e "$(date -u +"%Y-%m-%d %H:%M:%S UTC") ${color}$(printf "[%9s]" ${log_level})${color_reset} $log_line" 1>&2
+    if [ "${log_level}" = "output" ]; then
+	  echo -e "$(date -u +"%Y-%m-%d %H:%M:%S UTC") ${color}$(printf "[%9s]" ${log_level})${color_reset} $log_line"
+	else
+	  echo -e "$(date -u +"%Y-%m-%d %H:%M:%S UTC") ${color}$(printf "[%9s]" ${log_level})${color_reset} $log_line" 1>&2
+	fi
   done <<< "${@:-}"
 }
 
@@ -95,7 +99,7 @@ function warning ()   { [ "${LOG_LEVEL:-0}" -ge 4 ] && $(__b3bp_log warning "${@
 function notice ()    { [ "${LOG_LEVEL:-0}" -ge 5 ] && $(__b3bp_log notice "${@}") || true; }
 function info ()      { [ "${LOG_LEVEL:-0}" -ge 6 ] && $(__b3bp_log info "${@}") || true; }
 function debug ()     { [ "${LOG_LEVEL:-0}" -ge 7 ] && $(__b3bp_log debug "${@}") || true; }
-function output ()    {                           echo $(__b3bp_log output "${@}") || true; }
+function output ()    { echo $(__b3bp_log output "${@}") || true; }
 
 function help () {
   echo "" 1>&2
