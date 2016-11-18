@@ -99,7 +99,7 @@ function warning ()   { [ "${LOG_LEVEL:-0}" -ge 4 ] && $(__b3bp_log warning "${@
 function notice ()    { [ "${LOG_LEVEL:-0}" -ge 5 ] && $(__b3bp_log notice "${@}") || true; }
 function info ()      { [ "${LOG_LEVEL:-0}" -ge 6 ] && $(__b3bp_log info "${@}") || true; }
 function debug ()     { [ "${LOG_LEVEL:-0}" -ge 7 ] && $(__b3bp_log debug "${@}") || true; }
-function output ()    { echo $(__b3bp_log output "${@}") || true; }
+function output ()    { echo "$(__b3bp_log output "${@}")" || true; }
 
 function help () {
   echo "" 1>&2
