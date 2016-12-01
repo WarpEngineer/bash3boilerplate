@@ -1,27 +1,34 @@
-language: generic
+language: node_js
+node_js: 6
 matrix:
   include:
-    - os: linux
-      sudo: false
-    - os: osx
+  - os: linux
+    sudo: false
+  - os: osx
 env:
   global:
-    - secure: "LBDI3qOC+d2kmPSS8W6L9UF7HFiu1JC4HwK4j0sjGBh+gjRMpCRxFX7p51pbHd480ItDucN/0CMKy+e0umIRR/xrZSbuQqxby68eoT1tQ5nG9gpDTTEgu1n7Z3vPl9aEitMPlP1ovqRRSViBsYU3E5DRb7Vw2lDpCOj/lqAZT0Y="
-install:
-  # Install acceptance test dependencies for OSX
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then which gsed || brew install gnu-sed; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then which gtimeout || brew install coreutils; fi
-  # Show versions used
-  - bash --version
-  - awk --version
+  - secure: BeM6mpPEATdeFcAr/222QBZ9vRkZtU2WOi9QQy3mxsuDbWfM8RxYESIEJLipyhW9kXGoe6HGMqm4Kz9B/c4jrzeSXPpKnW7mIfnyqN+hhq1ctW9qPSqodu+fYNhdDxXh5wylml7hnIJzU70vFGrFknZRE2FYk5XvyHg2ImIKDJw=
+  - secure: RJ5UpdXms9QkraylZ11OBfmcRrmKnb254Yj0yCDAvZmg+n+3jSTwMgGvPY8Ih8X/R1JeW3VTtFDkJXXPnjjfpNg1M91u4CAEUOMPciCudYcoF6GKb8psnOzneTTX5M7zuJSzknGdpv/foldxiPYxiY5Hn5bfjmikhAEl+QX/R0Y=
+  - secure: BXf2buPt/DA09M5ZUdp/LpOWtUuz1mfCBopLyxvHv3Sl3ln+Az57wWsM2+Re+77lUOgihR2f6lXYfNUmQuSUo157rZPunQCqM/DJhK69KhREEB6SJDaJF3FVlnGla+Cwwb1IQUtMopqX9pBYD7w/zyWQFJCi20O57JEVIdfZZS8=
+install: npm install # <-- yarn still messes up nested bins: https://github.com/yarnpkg/yarn/issues/760
+before_install:
+- if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update; fi
+- if [ "$TRAVIS_OS_NAME" = "osx" ]; then which gsed || brew install gnu-sed; fi
+- if [ "$TRAVIS_OS_NAME" = "osx" ]; then which gtimeout || brew install coreutils;
+  fi
+- bash --version
+- awk --version
+before_cache:
+  - rm -f ./node_modules/.bin/which # <-- workaround for https://github.com/travis-ci/travis-ci/issues/5092
+cache:
+  apt: true
+  directories:
+  - .lanyon
 script: test/acceptance.sh
-# Travis docs: Note that pull request builds skip deployment step altogether.
-# https://docs.travis-ci.com/user/deployment/#Conditional-Releases-with-on
 deploy:
   skip_cleanup: true
   provider: script
-  script: website/_scripts/deploy.sh
+  script: website/.lanyon/bin/deploy
   on:
     branch: master
     condition: $TRAVIS_OS_NAME = linux
