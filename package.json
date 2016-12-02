@@ -3,7 +3,7 @@
   "description": "Copypastable templates to write better bash scripts",
   "version": "2.1.0",
   "scripts": {
-    "build:production": "LANYON_ENV=production lanyon build",
+    "build:production": "npm run inject && LANYON_ENV=production lanyon build",
     "build": "lanyon build",
     "deploy": "lanyon deploy",
     "encrypt": "lanyon encrypt",
@@ -33,7 +33,7 @@
   "devDependencies": {
     "browser-sync": "2.11.0",
     "cross-env": "1.0.7",
-    "lanyon": "0.0.24",
+    "lanyon": "0.0.32",
     "nodemon": "1.8.1",
     "npm-run-all": "2.1.1"
   }
