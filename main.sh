@@ -53,7 +53,6 @@ __base="$(basename "${__file}" .sh)"
 LOG_LEVEL="${LOG_LEVEL:-6}" # 7 = debug -> 0 = emergency
 NO_COLOR="${NO_COLOR:-}"    # true = disable color. otherwise autodetected
 
-
 ### Functions
 ##############################################################################
 function __b3bp_log () {
@@ -83,7 +82,8 @@ function __b3bp_log () {
   local color="${!colorvar:-$color_error}"
   local color_reset="\x1b[0m"
 
-  if [ "${NO_COLOR}" = "true" ] || [[ "${TERM:-}" != "xterm"* ]] || [ -t 1 ]; then
+  # TODO: look at more than just 'xterm'.  tput colors, screen, screen-256color
+  if [ "${NO_COLOR}" = "true" ] || ( [[ "${TERM:-}" != "xterm"* ]] && [[ "${TERM:-}" != "screen"* ]] ) || [ -t 1 ]; then
     # Don't use colors on pipes or non-recognized terminals
     color=""; color_reset=""
   fi
