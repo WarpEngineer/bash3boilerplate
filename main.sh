@@ -83,9 +83,11 @@ function __b3bp_log () {
   local color_reset="\x1b[0m"
 
   # TODO: look at more than just 'xterm'.  tput colors, screen, screen-256color
-  if [ "${NO_COLOR}" = "true" ] || ( [[ "${TERM:-}" != "xterm"* ]] && [[ "${TERM:-}" != "screen"* ]] ) || [ -t 1 ]; then
-    # Don't use colors on pipes or non-recognized terminals
-    color=""; color_reset=""
+  if [ "${NO_COLOR:-}" = "true" ] || ( [[ "${TERM:-}" != "xterm"* ]] && [[ "${TERM:-}" != "screen"* ]] ) || [ ! -t 2 ]; then
+    if [ "${NO_COLOR:-}" != "false" ]; then
+      # Don't use colors on pipes or non-recognized terminals
+      color=""; color_reset=""
+    fi
   fi
 
   # all remaining arguments are to be printed
@@ -100,14 +102,14 @@ function __b3bp_log () {
   done <<< "${@:-}"
 }
 
-function emergency () {                                $(__b3bp_log emergency "${@}"); exit 1; }
-function alert ()     { [ "${LOG_LEVEL:-0}" -ge 1 ] && $(__b3bp_log alert "${@}"); true; }
-function critical ()  { [ "${LOG_LEVEL:-0}" -ge 2 ] && $(__b3bp_log critical "${@}"); true; }
-function error ()     { [ "${LOG_LEVEL:-0}" -ge 3 ] && $(__b3bp_log error "${@}"); true; }
-function warning ()   { [ "${LOG_LEVEL:-0}" -ge 4 ] && $(__b3bp_log warning "${@}"); true; }
-function notice ()    { [ "${LOG_LEVEL:-0}" -ge 5 ] && $(__b3bp_log notice "${@}"); true; }
-function info ()      { [ "${LOG_LEVEL:-0}" -ge 6 ] && $(__b3bp_log info "${@}"); true; }
-function debug ()     { [ "${LOG_LEVEL:-0}" -ge 7 ] && $(__b3bp_log debug "${@}"); true; }
+function emergency () {                                __b3bp_log emergency "${@}"; exit 1; }
+function alert ()     { [ "${LOG_LEVEL:-0}" -ge 1 ] && __b3bp_log alert "${@}"; true; }
+function critical ()  { [ "${LOG_LEVEL:-0}" -ge 2 ] && __b3bp_log critical "${@}"; true; }
+function error ()     { [ "${LOG_LEVEL:-0}" -ge 3 ] && __b3bp_log error "${@}"; true; }
+function warning ()   { [ "${LOG_LEVEL:-0}" -ge 4 ] && __b3bp_log warning "${@}"; true; }
+function notice ()    { [ "${LOG_LEVEL:-0}" -ge 5 ] && __b3bp_log notice "${@}"; true; }
+function info ()      { [ "${LOG_LEVEL:-0}" -ge 6 ] && __b3bp_log info "${@}"; true; }
+function debug ()     { [ "${LOG_LEVEL:-0}" -ge 7 ] && __b3bp_log debug "${@}"; true; }
 function output ()    { echo "$(__b3bp_log output "${@}")"; true; }
 
 function help () {
@@ -158,13 +160,20 @@ EOF
 
 # Translate usage string -> getopts arguments, and set $arg_<flag> defaults
 while read -r __b3bp_tmp_line; do
-  if echo "${__b3bp_tmp_line}" |egrep '^-' >/dev/null 2>&1; then
+  if [[ "${__b3bp_tmp_line}" =~ ^- ]]; then
     # fetch single character version of option string
-    __b3bp_tmp_opt="$(echo "${__b3bp_tmp_line}" |awk '{print $1}' |sed -e 's#^-##')"
+    __b3bp_tmp_opt="${__b3bp_tmp_line%% *}"
+    __b3bp_tmp_opt="${__b3bp_tmp_opt:1}"
 
     # fetch long version if present
-    __b3bp_tmp_long_opt="$(echo "${__b3bp_tmp_line}" |awk '/\-\-/ {print $2}' |sed -e 's#^--##')"
-    __b3bp_tmp_long_opt_mangled="$(sed 's#-#_#g' <<< "$__b3bp_tmp_long_opt")"
+    __b3bp_tmp_long_opt=""
+
+    if [[ "${__b3bp_tmp_line}" == *"--"* ]]; then
+      __b3bp_tmp_long_opt="${__b3bp_tmp_line#*--}"
+      __b3bp_tmp_long_opt="${__b3bp_tmp_long_opt%% *}"
+    fi
+
+    __b3bp_tmp_long_opt_mangled="${__b3bp_tmp_long_opt//-/_}"
 
     # map long name back to short name
     __b3bp_tmp_varname="__b3bp_tmp_short_opt_${__b3bp_tmp_long_opt_mangled}"
@@ -172,7 +181,7 @@ while read -r __b3bp_tmp_line; do
 
     # check if option takes an argument
     __b3bp_tmp_varname="__b3bp_tmp_has_arg_${__b3bp_tmp_opt}"
-    if ! echo "${__b3bp_tmp_line}" |egrep '\[.*\]' >/dev/null 2>&1; then
+    if [[ ! "${__b3bp_tmp_line}" =~ \[.*\] ]]; then
       __b3bp_tmp_init="0" # it's a flag. init with 0
       eval "${__b3bp_tmp_varname}=0"
     else
@@ -185,12 +194,12 @@ while read -r __b3bp_tmp_line; do
 
   [ -z "${__b3bp_tmp_opt:-}" ] && continue
 
-  if echo "${__b3bp_tmp_line}" |egrep '\. Default=' >/dev/null 2>&1; then
+  if [[ "${__b3bp_tmp_line}" =~ \.\ Default ]]; then
     # ignore default value if option does not have an argument
     __b3bp_tmp_varname="__b3bp_tmp_has_arg_${__b3bp_tmp_opt:0:1}"
 
     if [ "${!__b3bp_tmp_varname}" = "1" ]; then
-      __b3bp_tmp_init="$(echo "${__b3bp_tmp_line}" |sed 's#^.*Default=\(\)#\1#g')"
+      __b3bp_tmp_init="${__b3bp_tmp_line##*Default=}"
     fi
   fi
 
@@ -218,14 +227,14 @@ if [ -n "${__b3bp_tmp_opts:-}" ]; then
       if [[ "${OPTARG}" =~ .*=.* ]]; then
 	# --key=value format
 	__b3bp_tmp_long_opt=${OPTARG/=*/}
-	__b3bp_tmp_long_opt_mangled="$(sed 's#-#_#g' <<< "$__b3bp_tmp_long_opt")"
+	__b3bp_tmp_long_opt_mangled="${__b3bp_tmp_long_opt//-/_}"
 	# Set opt to the short option corresponding to the long option
 	eval "__b3bp_tmp_opt=\"\${__b3bp_tmp_short_opt_${__b3bp_tmp_long_opt_mangled}}\""
 	OPTARG=${OPTARG#*=}
       else
 	# --key value format
 	# Map long name to short version of option
-	__b3bp_tmp_long_opt_mangled="$(sed 's#-#_#g' <<< "$OPTARG")"
+	__b3bp_tmp_long_opt_mangled="${OPTARG//-/_}"
 	eval "__b3bp_tmp_opt=\"\${__b3bp_tmp_short_opt_${__b3bp_tmp_long_opt_mangled}}\""
 	# Only assign OPTARG if option takes an argument
 	eval "OPTARG=\"\${@:OPTIND:\${__b3bp_tmp_has_arg_${__b3bp_tmp_opt}}}\""
