@@ -112,6 +112,14 @@ function info ()      { [ "${LOG_LEVEL:-0}" -ge 6 ] && __b3bp_log info "${@}"; t
 function debug ()     { [ "${LOG_LEVEL:-0}" -ge 7 ] && __b3bp_log debug "${@}"; true; }
 function output ()    { echo "$(__b3bp_log output "${@}")"; true; }
 
+function box() { 
+	t="$1xxxx"
+	c=${2:-=}
+	output ${t//?/$c}
+	output "$c $1 $c"
+	output ${t//?/$c}
+} # Make box around text. By @bartonski
+
 function help () {
   echo "" 1>&2
   echo " ${*}" 1>&2
@@ -376,6 +384,7 @@ info "arg_h: ${arg_h}"
 
 # This goes to STDOUT
 output "General output that goes to stdout regardless of log level"
+box "Output in a box"
 info "$(echo -e "multiple lines example - line #1\nmultiple lines example - line #2\nimagine logging the output of 'ls -al /path/'")"
 
 # All of these go to STDERR, so you can use STDOUT for piping machine readable information to other software
