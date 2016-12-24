@@ -16,7 +16,7 @@
 #
 #  ALLOW_REMAINDERS=1 templater.sh input.cfg output.cfg
 #
-# Based on a template by BASH3 Boilerplate v2.1.0
+# Based on a template by BASH3 Boilerplate v2.2.0
 # http://bash3boilerplate.sh/#authors
 #
 # The MIT License (MIT)
@@ -30,11 +30,11 @@ function templater() {
   templateSrc="${1:-}"
   templateDst="${2:-}"
 
-  if [ ! -f "${templateSrc}" ]; then
+  if [[ ! -f "${templateSrc}" ]]; then
     echo "ERROR: Template source '${templateSrc}' needs to exist"
     exit 1
   fi
-  if [ ! -n "${templateDst}" ]; then
+  if [[ ! "${templateDst}" ]]; then
     echo "ERROR: Template destination '${templateDst}' needs to be specified"
     exit 1
   fi
@@ -48,13 +48,14 @@ function templater() {
 
   # cat "${templateDst}"
 
-  if grep '${' "${templateDst}" && [ "${ALLOW_REMAINDERS}" = "0" ]; then
+  # shellcheck disable=SC2016
+  if grep '${' "${templateDst}" && [[ "${ALLOW_REMAINDERS}" = "0" ]]; then
     echo "ERROR: Unable to replace the above template vars"
     exit 1
   fi
 }
 
-if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
   export -f templater
 else
   templater "${@}"

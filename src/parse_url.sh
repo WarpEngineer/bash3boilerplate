@@ -18,7 +18,7 @@
 #
 #  parse_url.sh 'http://johndoe:abc123@example.com:8080/index.html'
 #
-# Based on a template by BASH3 Boilerplate v2.1.0
+# Based on a template by BASH3 Boilerplate v2.2.0
 # http://bash3boilerplate.sh/#authors
 #
 # The MIT License (MIT)
@@ -30,27 +30,37 @@ function parse_url() {
   local parse="${1}"
   local need="${2:-}"
 
-  local proto="$(echo $parse | grep :// | sed -e's,^\(.*://\).*,\1,g')"
-  local url="$(echo ${parse/$proto/})"
-  local userpass="$(echo $url | grep @ | cut -d@ -f1)"
-  local user="$(echo $userpass | grep : | cut -d: -f1)"
-  local pass="$(echo $userpass | grep : | cut -d: -f2)"
-  local hostport="$(echo ${url/$userpass@/} | cut -d/ -f1)"
-  local host="$(echo $hostport | grep : | cut -d: -f1)"
-  local port="$(echo $hostport | grep : | cut -d: -f2)"
-  local path="$(echo $url | grep / | cut -d/ -f2-)"
+  local proto
+  local url
+  local userpass
+  local user
+  local pass
+  local hostport
+  local host
+  local port
+  local path
 
-  [ -z "${user}" ] && user="${userpass}"
-  [ -z "${host}" ] && host="${hostport}"
-  if [ -z "${port}" ]; then
-    [ "${proto}" = "http://" ]  && port="80"
-    [ "${proto}" = "https://" ] && port="443"
-    [ "${proto}" = "mysql://" ] && port="3306"
-    [ "${proto}" = "redis://" ] && port="6379"
+  proto="$(echo "${parse}" | grep :// | sed -e's,^\(.*://\).*,\1,g')"
+  url="${parse/${proto}/}"
+  userpass="$(echo "${url}" | grep @ | cut -d@ -f1)"
+  user="$(echo "${userpass}" | grep : | cut -d: -f1)"
+  pass="$(echo "${userpass}" | grep : | cut -d: -f2)"
+  hostport="$(echo "${url/${userpass}@/}" | cut -d/ -f1)"
+  host="$(echo "${hostport}" | grep : | cut -d: -f1)"
+  port="$(echo "${hostport}" | grep : | cut -d: -f2)"
+  path="$(echo "${url}" | grep / | cut -d/ -f2-)"
+
+  [[ ! "${user}" ]] && user="${userpass}"
+  [[ ! "${host}" ]] && host="${hostport}"
+  if [[ ! "${port}" ]]; then
+    [[ "${proto}" = "http://" ]]  && port="80"
+    [[ "${proto}" = "https://" ]] && port="443"
+    [[ "${proto}" = "mysql://" ]] && port="3306"
+    [[ "${proto}" = "redis://" ]] && port="6379"
   fi
 
-  if [ -n "${need}" ]; then
-    echo ${!need}
+  if [[ "${need}" ]]; then
+    echo "${!need}"
   else
     echo ""
     echo " Use second argument to return just 1 variable."
@@ -66,7 +76,7 @@ function parse_url() {
   fi
 }
 
-if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
   export -f parse_url
 else
   parse_url "${@}"

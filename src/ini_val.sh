@@ -18,7 +18,7 @@
 #
 #  ini_val.sh data.ini connection.host 127.0.0.1
 #
-# Based on a template by BASH3 Boilerplate v2.1.0
+# Based on a template by BASH3 Boilerplate v2.2.0
 # http://bash3boilerplate.sh/#authors
 #
 # The MIT License (MIT)
@@ -35,22 +35,24 @@ function ini_val() {
   local key=""
 
   # Split on . for section. However, section is optional
-  read section key <<<$(IFS="."; echo ${sectionkey})
-  if [ -z "${key}" ]; then
+  IFS='.' read -r section key <<< "${sectionkey}"
+  if [[ ! "${key}" ]]; then
     key="${section}"
     section=""
   fi
 
-  local current=$(awk -F "${delim}" "/^${key}${delim}/ {for (i=2; i<NF; i++) printf \$i \" \"; print \$NF}" "${file}")
-  if [ -z "${val}" ]; then
+  local current
+  current=$(awk -F "${delim}" "/^${key}${delim}/ {for (i=2; i<NF; i++) printf \$i \" \"; print \$NF}" "${file}")
+
+  if [[ ! "${val}" ]]; then
     # get a value
     echo "${current}"
   else
     # set a value
-    if [ -z "${current}" ]; then
+    if [[ ! "${current}" ]]; then
       # doesn't exist yet, add
 
-      if [ -z "${section}" ]; then
+      if [[ ! "${section}" ]]; then
         # no section was given, add to bottom of file
         echo "${key}${delim}${val}" >> "${file}"
       else
@@ -68,7 +70,7 @@ function ini_val() {
   fi
 }
 
-if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
   export -f ini_val
 else
   ini_val "${@}"

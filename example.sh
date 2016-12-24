@@ -7,7 +7,7 @@
 #
 #  LOG_LEVEL=7 ./example.sh -f /tmp/x -d (change this for your script)
 #
-# Based on a template by BASH3 Boilerplate v2.1.0
+# Based on a template by BASH3 Boilerplate v2.2.0
 # http://bash3boilerplate.sh/#authors
 #
 # The MIT License (MIT)
@@ -43,7 +43,7 @@ read -r -d '' __helptext <<-'EOF' || true # exits non-zero when EOF encountered
  parsed and will be added as-is to the help.
 EOF
 
-# shellcheck source=./main.sh
+# shellcheck source=main.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/main.sh"
 
 

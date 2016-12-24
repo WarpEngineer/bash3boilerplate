@@ -44,7 +44,7 @@ trap cleanup_before_exit EXIT
 cmdSed=sed
 cmdTimeout=timeout
 
-if [[ "${OSTYPE}" == "darwin"* ]]; then
+if [[ "${OSTYPE}" = "darwin"* ]]; then
   cmdSed=gsed
   cmdTimeout=gtimeout
 fi
@@ -201,18 +201,16 @@ if [[ "$(command -v shellcheck)" ]]; then
   failed="false"
 
   while IFS=$'\n' read -r file; do
-    lint="false"
-    [[ "${file}" = "./main.sh" ]] && lint="true"
-    [[ "${file}" = "./example.sh" ]] && lint="true"
-    [[ "${file}" = "./test/acceptance.sh" ]] && lint="true"
-    [[ "${lint}" != "true" ]] && continue
+    [[ "${file}" =~ ^\./node_modules/ ]] && continue
+    [[ "${file}" =~ ^\./website/\.lanyon/ ]] && continue
 
     echo -n "    ${file}.. "
 
-    if ! shellcheck --shell=bash --external-sources "${file}" >> "${__accptstTmpDir}/shellcheck.err"; then
-      echo "✗"
-      failed="true"
-      continue
+    if ! shellcheck --shell=bash --external-sources --color=always \
+      "${file}" >> "${__accptstTmpDir}/shellcheck.err"; then
+	echo "✗"
+	failed="true"
+	continue
     fi
 
     echo "✓"
@@ -224,6 +222,36 @@ if [[ "$(command -v shellcheck)" ]]; then
     cat "${__accptstTmpDir}/shellcheck.err"
     exit 1
   fi
+fi
+
+# poor man's style guide checking
+echo "==> b3bp style guide"
+pushd "${__root}" > /dev/null
+
+failed="false"
+
+while IFS=$'\n' read -r file; do
+  [[ "${file}" =~ ^\./node_modules/ ]] && continue
+  [[ "${file}" =~ ^\./website/\.lanyon/ ]] && continue
+
+  echo -n "    ${file}.. "
+
+  if ! "${__root}/test/style.pl" "${file}" >> "${__accptstTmpDir}/style.err"; then
+      echo "✗"
+      failed="true"
+      continue
+  fi
+
+  echo "✓"
+done <<< "$(find . -type f -iname '*.sh')"
+
+popd > /dev/null
+
+if [[ "${failed}" = "true" ]]; then
+  echo
+  cat "${__accptstTmpDir}/style.err"
+  echo
+  exit 1
 fi
 
 exit 0
