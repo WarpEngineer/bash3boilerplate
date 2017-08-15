@@ -4,8 +4,8 @@
 # This file:
 #
 #  - Takes a URL (smb, nfs, afs) and tries to mount it at a given target directory
-#  - Forceully unmounts any active mount at the target directory first
-#  - Displays the mounts contents for verification
+#  - Forcefully unmounts any active mount at the target directory first
+#  - Displays the mount's contents for verification
 #
 # Depends on:
 #
@@ -20,7 +20,7 @@
 #
 #  megamount.sh smb://janedoe:abc123@192.168.0.1/documents /mnt/documents
 #
-# Based on a template by BASH3 Boilerplate v2.2.0
+# Based on a template by BASH3 Boilerplate v2.3.0
 # http://bash3boilerplate.sh/#authors
 #
 # The MIT License (MIT)

@@ -16,7 +16,7 @@
 #
 #  ALLOW_REMAINDERS=1 templater.sh input.cfg output.cfg
 #
-# Based on a template by BASH3 Boilerplate v2.2.0
+# Based on a template by BASH3 Boilerplate v2.3.0
 # http://bash3boilerplate.sh/#authors
 #
 # The MIT License (MIT)
@@ -40,7 +40,7 @@ function templater() {
   fi
 
   cp -f "${templateSrc}" "${templateDst}"
-  for var in $(env |awk -F= '{print $1}' |egrep '^[A-Z0-9_]+$'); do
+  for var in $(env |awk -F= '{print $1}' |grep -E '^[A-Z0-9_]+$'); do
     sed -i.bak -e "s#\${${var}}#${!var}#g" "${templateDst}"
     # this .bak dance is done for BSD/GNU portability: http://stackoverflow.com/a/22084103/151666
     rm -f "${templateDst}.bak"

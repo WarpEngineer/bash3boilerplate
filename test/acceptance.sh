@@ -63,7 +63,7 @@ __node="$(which node)"
 __arch="amd64"
 
 # explicitly setting NO_COLOR to false will make b3bp ignore TERM
-# not being "xterm*" and STDERR not being connected to a terminal
+# not being "xterm*" or "screen*" and STDERR not being connected to a terminal
 # it's the opposite of NO_COLOR="true" - it forces color, no matter what
 export NO_COLOR="false"
 
@@ -148,7 +148,7 @@ while IFS=$'\n' read -r scenario; do
         "${curFile}"
       fi
       if grep -q 'ACCPTST:STDIO_REPLACE_REMOTE_EXEC' "${curFile}"; then
-        egrep -v 'remote-exec\): [ a-zA-Z]' "${curFile}" > "${__sysTmpDir}/accptst-filtered.txt"
+        grep -Ev 'remote-exec\): [ a-zA-Z]' "${curFile}" > "${__sysTmpDir}/accptst-filtered.txt"
         mv "${__sysTmpDir}/accptst-filtered.txt" "${curFile}"
       fi
     done
@@ -193,7 +193,41 @@ done <<< "$(find "${__dir}/scenario" -type f -iname 'run.sh')"
 
 [[ "${1:-}" ]] && exit 0
 
-# finally do some shellcheck linting
+# Ensure correct syntax with all available bashes
+
+if bashes=($(which -a bash 2> /dev/null )); then
+  for bash in "${bashes[@]}"; do
+    # shellcheck disable=SC2016
+    echo "==> ${bash} -n $(${bash} -c 'echo "(${BASH_VERSION})"')"
+    pushd "${__root}" > /dev/null
+
+    failed="false"
+
+    while IFS=$'\n' read -r file; do
+      [[ "${file}" =~ ^\./node_modules/ ]] && continue
+      [[ "${file}" =~ ^\./website/\.lanyon/ ]] && continue
+
+      echo -n "    ${file}.. "
+
+      if ! "${bash}" -n "${file}" 2>> "${__accptstTmpDir}/${bash//\//.}.err"; then
+          echo "✗"
+          failed="true"
+          continue
+      fi
+
+      echo "✓"
+    done <<< "$(find . -type f -iname '*.sh')"
+
+    popd > /dev/null
+
+    if [[ "${failed}" = "true" ]]; then
+      cat "${__accptstTmpDir}/${bash//\//.}.err"
+      exit 1
+    fi
+  done
+fi
+
+# do some shellcheck linting
 if [[ "$(command -v shellcheck)" ]]; then
   echo "==> Shellcheck"
   pushd "${__root}" > /dev/null
@@ -208,9 +242,9 @@ if [[ "$(command -v shellcheck)" ]]; then
 
     if ! shellcheck --shell=bash --external-sources --color=always \
       "${file}" >> "${__accptstTmpDir}/shellcheck.err"; then
-	echo "✗"
-	failed="true"
-	continue
+        echo "✗"
+        failed="true"
+        continue
     fi
 
     echo "✓"
