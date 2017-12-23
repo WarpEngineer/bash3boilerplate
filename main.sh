@@ -375,7 +375,7 @@ if [[ "${arg_n:?}" = "1" ]]; then
 fi
 
 # version mode
-if [ "${arg_V}" = "1" ]; then
+if [ "${arg_V:?}" = "1" ]; then
  # Version print exists with code 1
  echo "Version: ${__version}" 2>&1
  exit 1
