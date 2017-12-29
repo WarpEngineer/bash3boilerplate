@@ -29,10 +29,10 @@ set -o pipefail
 # set -o xtrace
 
 # Boilerplate version
-__BOILERPLATE_VERSION__="2016.10.6"
+__BOILERPLATE_VERSION__="2017.12.29"
 
 # Set script version 
-__version="2016.10"
+__version="2017.12"
 
 if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
   __i_am_main_script="0" # false
@@ -61,41 +61,67 @@ __base="$(basename "${__file}" .sh)"
 LOG_LEVEL="${LOG_LEVEL:-6}" # 7 = debug -> 0 = emergency
 NO_COLOR="${NO_COLOR:-}"    # true = disable color. otherwise autodetected
 
+COLOR_CYAN="\x1b[36m"
+COLOR_OUTPUT=${COLOR_CYAN}
+COLOR_PURPLE="\x1b[35m"
+COLOR_DEGUB=${COLOR_PURPLE}
+COLOR_GREEN="\x1b[32m"
+COLOR_INFO=${COLOR_GREEN}
+COLOR_BLUE="\x1b[34m"
+COLOR_NOTICE=${COLOR_BLUE}
+COLOR_YELLOW="\x1b[33m"
+COLOR_WARNING=${COLOR_YELLOW}
+COLOR_DARKRED="\x1b[31m"
+COLOR_ERROR=${COLOR_DARKRED}
+COLOR_RED="\x1b[1;31m"
+COLOR_CRITICAL=${COLOR_RED}
+COLOR_ALERT="\x1b[1;33;41m"
+COLOR_EMERGENCY="\x1b[1;4;5;33;41m"
+COLOR_RESET="\x1b[0m"
+
 ### Functions
 ##############################################################################
+function __b3bp_color_out () {
+  local out_color="${1}"
+  shift
+
+  local colorvar="COLOR_${out_color^^}"
+  local color="${!colorvar:-${COLOR_ERROR}}"
+  local color_reset=${COLOR_RESET}
+
+  if [[ "${NO_COLOR:-}" = "true" ]] || [[ ! -t 1 ]]; then
+    # Don't use colors on pipes
+    color=""; color_reset=""
+  fi
+  while IFS=$'\n' read -r out_line; do
+    echo -e "${color}${out_line}${color_reset}"
+  done <<< "${@:-}"
+}
+
+function cyan_out    () { __b3bp_color_out cyan "${@}";    }
+function purple_out  () { __b3bp_color_out purple "${@}";  }
+function green_out   () { __b3bp_color_out green "${@}";   }
+function blue_out    () { __b3bp_color_out blue "${@}";    }
+function yellow_out  () { __b3bp_color_out yellow "${@}";  }
+function darkred_out () { __b3bp_color_out darkred "${@}"; }
+function red_out     () { __b3bp_color_out red "${@}";     }
+
 function __b3bp_log () {
   local log_level="${1}"
   shift
 
-  local color_output="\x1b[36m"
-  # shellcheck disable=SC2034
-  local color_debug="\x1b[35m"
-  # shellcheck disable=SC2034
-  local color_info="\x1b[32m"
-  # shellcheck disable=SC2034
-  local color_notice="\x1b[34m"
-  # shellcheck disable=SC2034
-  local color_warning="\x1b[33m"
-  # shellcheck disable=SC2034
-  local color_error="\x1b[31m"
-  # shellcheck disable=SC2034
-  local color_critical="\x1b[1;31m"
-  # shellcheck disable=SC2034
-  local color_alert="\x1b[1;33;41m"
-  # shellcheck disable=SC2034
-  local color_emergency="\x1b[1;4;5;33;41m"
+  local colorvar="COLOR_${log_level^^}"
+  local color="${!colorvar:-${COLOR_ERROR}}"
+  local color_reset=${COLOR_RESET}
 
-  local colorvar="color_${log_level}"
-
-  local color="${!colorvar:-${color_error}}"
-  local color_reset="\x1b[0m"
-
-  # TODO: look at more than just 'xterm'.  tput colors, screen, screen-256color
-  if [[ "${NO_COLOR:-}" = "true" ]] || ( [[ "${TERM:-}" != "xterm"* ]] && [[ "${TERM:-}" != "screen"* ]] ) || [[ ! -t 2 ]]; then
-    if [[ "${NO_COLOR:-}" != "false" ]]; then
-      # Don't use colors on pipes or non-recognized terminals
-      color=""; color_reset=""
-    fi
+  if [[ "${NO_COLOR:-}" = "true" ]]; then
+    color=""; color_reset=""
+  elif ([[ "${log_level}" = "output" ]] && [[ ! -t 1 ]]); then
+    # Don't use colors on pipes
+    color=""; color_reset=""
+  elif ([[ ! "${log_level}" = "output" ]] && [[ ! -t 2 ]]); then
+    # Don't use colors on pipes
+    color=""; color_reset=""
   fi
 
   # all remaining arguments are to be printed
@@ -103,10 +129,10 @@ function __b3bp_log () {
 
   while IFS=$'\n' read -r log_line; do
     if [ "${log_level}" = "output" ]; then
-	  echo -e "$(date -u +"%Y-%m-%d %H:%M:%S UTC") ${color}$(printf "[%9s]" ${log_level})${color_reset} $log_line"
-	else
-	  echo -e "$(date -u +"%Y-%m-%d %H:%M:%S UTC") ${color}$(printf "[%9s]" ${log_level})${color_reset} $log_line" 1>&2
-	fi
+      echo -e "$(date -u +"%Y-%m-%d %H:%M:%S UTC") ${color}$(printf "[%9s]" ${log_level})${color_reset} $log_line"
+    else
+      echo -e "$(date -u +"%Y-%m-%d %H:%M:%S UTC") ${color}$(printf "[%9s]" ${log_level})${color_reset} $log_line" 1>&2
+    fi
   done <<< "${@:-}"
 }
 
@@ -118,7 +144,7 @@ function warning ()   { [[ "${LOG_LEVEL:-0}" -ge 4 ]] && __b3bp_log warning "${@
 function notice ()    { [[ "${LOG_LEVEL:-0}" -ge 5 ]] && __b3bp_log notice "${@}"; true; }
 function info ()      { [[ "${LOG_LEVEL:-0}" -ge 6 ]] && __b3bp_log info "${@}"; true; }
 function debug ()     { [[ "${LOG_LEVEL:-0}" -ge 7 ]] && __b3bp_log debug "${@}"; true; }
-function output ()    { echo "$(__b3bp_log output "${@}")"; true; }
+function output ()    { __b3bp_log output "${@}"; true; }
 
 function box() { 
 	t="$1xxxx"
@@ -369,9 +395,17 @@ if [[ "${arg_v:?}" = "1" ]]; then
   set -o verbose
 fi
 
-# no color mode
+# set color mode
 if [[ "${arg_n:?}" = "1" ]]; then
   NO_COLOR="true"
+else
+  # autodetect but default to false if not set
+  # TODO: look at more than just 'xterm'.  tput colors, screen, screen-256color
+  if ( [[ "${TERM:-}" != "xterm"* ]] && [[ "${TERM:-}" != "screen"* ]] ); then
+    # Don't use colors on non-recognized terminals
+    NO_COLOR="true"
+  fi
+  NO_COLOR="${NO_COLOR:-false}"    # default to false if not set
 fi
 
 # version mode
@@ -402,18 +436,28 @@ info "__file: ${__file}"
 info "__dir: ${__dir}"
 info "__base: ${__base}"
 info "OSTYPE: ${OSTYPE}"
+info "NO_COLOR: ${NO_COLOR}"
 
 info "arg_f: ${arg_f}"
 info "arg_d: ${arg_d}"
 info "arg_v: ${arg_v}"
 info "arg_h: ${arg_h}"
+info "arg_n: ${arg_n}"
 
 # This goes to STDOUT
 output "General output that goes to stdout regardless of log level"
 box "Output in a box"
-info "$(echo -e "multiple lines example - line #1\nmultiple lines example - line #2\nimagine logging the output of 'ls -al /path/'")"
+
+cyan_out    "This is CYAN"
+purple_out  "This is PURPLE"
+green_out   "This is GREEN"
+blue_out    "This is BLUE"
+yellow_out  "This is YELLOW"
+darkred_out "This is DARK RED"
+red_out     "This is RED"
 
 # All of these go to STDERR, so you can use STDOUT for piping machine readable information to other software
+info "$(echo -e "multiple lines example - line #1\nmultiple lines example - line #2\nimagine logging the output of 'ls -al /path/'")"
 debug "Info useful to developers for debugging the application, not useful during operations."
 info "Normal operational messages - may be harvested for reporting, measuring throughput, etc. - no action required."
 notice "Events that are unusual but not error conditions - might be summarized in an email to developers or admins to spot potential problems - no immediate action required."
