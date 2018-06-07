@@ -238,7 +238,7 @@ while read -r __b3bp_tmp_line; do
 
   [[ "${__b3bp_tmp_opt:-}" ]] || continue
 
-  if [[ "${__b3bp_tmp_line}" =~ (^|\.\ *)Default= ]]; then
+  if [[ "${__b3bp_tmp_line}" =~ ^Default= ]] || [[ "${__b3bp_tmp_line}" =~ \.\ *Default= ]]; then
     # ignore default value if option does not have an argument
     __b3bp_tmp_varname="__b3bp_tmp_has_arg_${__b3bp_tmp_opt:0:1}"
 
@@ -256,7 +256,7 @@ while read -r __b3bp_tmp_line; do
     fi
   fi
 
-  if [[ "${__b3bp_tmp_line}" =~ (^|\.\ *)Required\. ]]; then
+  if [[ "${__b3bp_tmp_line}" =~ ^Required\. ]] || [[ "${__b3bp_tmp_line}" =~ \.\ *Required\. ]]; then
     # remember that this option requires an argument
     printf -v "__b3bp_tmp_has_arg_${__b3bp_tmp_opt:0:1}" '%s' "2"
   fi
@@ -305,8 +305,8 @@ if [[ "${__b3bp_tmp_opts:-}" ]]; then
     __b3bp_tmp_default="${!__b3bp_tmp_varname}"
 
     __b3bp_tmp_value="${OPTARG}"
-    if [[ -z "${OPTARG}" ]] && [[ "${__b3bp_tmp_default}" = "0" ]]; then
-      __b3bp_tmp_value="1"
+    if [[ -z "${OPTARG}" ]]; then
+      __b3bp_tmp_value=$((__b3bp_tmp_default + 1))
     fi
 
     printf -v "${__b3bp_tmp_varname}" '%s' "${__b3bp_tmp_value}"
