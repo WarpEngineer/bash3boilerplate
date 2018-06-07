@@ -29,10 +29,10 @@ set -o pipefail
 # set -o xtrace
 
 # Boilerplate version
-__BOILERPLATE_VERSION__="2017.12.29"
+__BOILERPLATE_VERSION__="2018.06.07"
 
 # Set script version 
-__version="2017.12"
+__version="2018.06"
 
 if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
   __i_am_main_script="0" # false
